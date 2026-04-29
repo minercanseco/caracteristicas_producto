@@ -10,7 +10,7 @@ class CaracteristicasProductos:
         self._info_producto = {}
         self._master = master
         self._ventanas = Ventanas(self._master)
-        self._base_de_datos = ComandosBaseDatos(self._parametros.cadena_conexion)
+        self._base_de_datos = ComandosBaseDatos()
 
         self._cargar_componentes()
         self._rellenar_componentes()
@@ -21,6 +21,7 @@ class CaracteristicasProductos:
     def _cargar_componentes(self):
         componentes = [
             ('tbx_producto', 'Producto:'),
+            ('txt_comentarios', 'Comms:'),
             ('tbx_clave', 'Clave:'),
             ('cbx_area', 'Área:'),
             ('tbx_unidad', 'Unidad:'),
@@ -29,6 +30,8 @@ class CaracteristicasProductos:
 
         ]
         self._ventanas.crear_formulario_simple(componentes)
+
+        self._ventanas.ajustar_alto_componente('txt_comentarios',5)
 
     def _rellenar_componentes(self):
         areas = ['Minisuper', 'Producción', 'Almacén']
@@ -43,7 +46,9 @@ class CaracteristicasProductos:
         self._ventanas.insertar_input_componente('tbx_clave', self._info_producto['ProductKey'])
         self._ventanas.insertar_input_componente('tbx_unidad', self._info_producto['Unit'])
         self._ventanas.insertar_input_componente('cbx_area', self._info_producto['Area'])
-
+        commentarios_produccion = self._info_producto['ProductionComments']
+        if commentarios_produccion:
+            self._ventanas.insertar_input_componente('txt_comentarios', commentarios_produccion)
 
         bloqueados = ['tbx_producto', 'tbx_clave', 'tbx_unidad', 'tbx_equivalencia']
         for componente in bloqueados:
@@ -61,7 +66,9 @@ class CaracteristicasProductos:
                     ClaveUnidad,
                     CASE WHEN ProductTypeIDCayal = 0 THEN 'Minisuper'
 						WHEN ProductTypeIDCayal = 1 THEN 'Producción'
-						ELSE 'Almacén' END Area
+						ELSE 'Almacén' END Area,
+						
+					ProductionComments
             FROM orgProduct WHERE ProductID = ?
         """, (product_id,))
 
@@ -99,6 +106,14 @@ class CaracteristicasProductos:
             UPDATE orgProduct SET ProductTypeIDCayal = ?, Equivalencia = ?
             WHERE ProductID = ?
         """,(area_id, equivalencia, self._product_id,))
+
+        comentarios = self._ventanas.obtener_input_componente('txt_comentarios')
+        if comentarios:
+            self._base_de_datos.command("""
+                        UPDATE orgProduct SET ProductionComments = ?
+                        WHERE ProductID = ?
+                    """, (comentarios, self._product_id,))
+
 
         self._master.destroy()
 
